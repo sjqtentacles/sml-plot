@@ -1,0 +1,11 @@
+(* MLB for the sml-plot library: the vendored sml-font core (which itself pulls
+ * in sml-raster + sml-image + sml-inflate + sml-color), the embedded bundled
+ * font, and the plot sources.  Consumers reference this file.
+ *
+ * The dependency .mlb is brought in WITHOUT a `local` wrapper so consumers can
+ * `open Image`/`Raster`/`Font` alongside Plot. *)
+$(SML_LIB)/basis/basis.mlb
+../lib/github.com/sjqtentacles/sml-font/font.mlb
+font_data.sml
+plot.sig
+plot.sml

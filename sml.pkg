@@ -1,0 +1,8 @@
+package github.com/sjqtentacles/sml-plot
+
+require {
+  github.com/sjqtentacles/sml-image
+  github.com/sjqtentacles/sml-raster
+  github.com/sjqtentacles/sml-color
+  github.com/sjqtentacles/sml-font
+}
