@@ -25,7 +25,7 @@ across compilers.*
 
 ## Status
 
-- 49 assertions, green on MLton and Poly/ML.
+- 58 assertions, green on MLton and Poly/ML.
 - Basis-library only; deterministic across compilers (PNG output is
   byte-identical run to run **and** between MLton and Poly/ML).
 - Vendors `sml-font` + `sml-raster` + `sml-image` (and their deps `sml-inflate`,
@@ -87,6 +87,8 @@ datatype series =
   | Bar     of (string * real) list   (* labelled bars from a zero baseline *)
   | Scatter of (real * real) list     (* discrete points, drawn as marks *)
   | Hist    of real list              (* samples, auto-binned into buckets *)
+  | Area    of (real * real) list     (* line filled down to the zero baseline *)
+  | Pie     of (string * real) list   (* labelled wedges, sized by |value| *)
 
 type axes = { xlabel : string, ylabel : string, grid : bool }
 
@@ -108,6 +110,13 @@ panel, flat data is padded to a unit range, and non-positive sizes clamp to a
 x-axis; `Bar` is laid out at integer slots `0, 1, 2, …` with each label centred
 under its bar; `Hist` bins its samples into `ceil(sqrt n)` (capped at 20)
 equal-width buckets.
+
+`Area` draws a `Line` whose region down to the `y = 0` baseline is filled
+(a closed filled path through the data points), so 0 is always included in the
+y-range. `Pie` is not plotted against the numeric axes: it draws labelled
+wedges centred in the plot area, each sized by its `|value|` as a fraction of
+the total and filled with its own palette colour. The area fill is composed
+from integer-projected polygons, so it is byte-identical across compilers.
 
 ### Pure layout maths (exposed and unit-tested)
 

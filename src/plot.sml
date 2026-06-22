@@ -24,6 +24,8 @@ struct
     | Bar     of (string * real) list
     | Scatter of (real * real) list
     | Hist    of real list
+    | Area    of (real * real) list
+    | Pie     of (string * real) list
 
   type axes = { xlabel : string, ylabel : string, grid : bool }
 
@@ -158,6 +160,8 @@ struct
     | Bar _     => "bars"
     | Scatter _ => "scatter"
     | Hist _    => "histogram"
+    | Area _    => "area"
+    | Pie _     => "pie"
 
   (* integer 10^d for d >= 0 *)
   fun ipow10i d = if d <= 0 then 1 else 10 * ipow10i (d - 1)
@@ -255,6 +259,10 @@ struct
             val xs = [lo, lo + width * real nb]
             val ys = 0.0 :: List.tabulate (nb, fn i => real (Array.sub (counts, i)))
           in (xs, ys) end
+    (* Area joins the line's points to the zero baseline, so 0 is in range. *)
+    | Area pts    => (map #1 pts, 0.0 :: map #2 pts)
+    (* Pie is not plotted against the numeric axes; it contributes no range. *)
+    | Pie _       => ([], [])
 
   (* ================= render ================= *)
 
@@ -420,6 +428,54 @@ struct
                 in bin (j + 1, im) end
           in bin (0, im) end
 
+      (* Area: the line filled down to the y = 0 baseline.  Build a closed
+         polygon (baseline at the first x, the projected data points, baseline
+         at the last x), fill it, then redraw the top edge crisply. *)
+      fun drawArea (pts, color, im) =
+        case pts of
+          [] => im
+        | _ =>
+          let
+            val baseY = py 0.0
+            val proj = map (fn (x, y) => (px x, py y)) pts
+            val xFirst = #1 (hd proj)
+            val xLast = #1 (List.last proj)
+            val poly = (xFirst, baseY) :: proj @ [(xLast, baseY)]
+            val im = R.fillPolygon im poly color
+          in R.polyline im proj color end
+
+      (* Pie: wedges sized by |value|, each filled with its own palette colour.
+         A wedge is a triangle fan from the centre through points sampled along
+         its arc, filled with the even-odd polygon rule. *)
+      fun drawPie (cells, im) =
+        let
+          val total = foldl (fn ((_, v), a) => a + Real.abs v) 0.0 cells
+        in
+          if total <= 0.0 then im
+          else
+            let
+              val cx = (plotX0 + plotX1) div 2
+              val cy = (plotY0 + plotY1) div 2
+              val radius = Int.max (1, Int.min (plotW, plotH) div 2 - 6)
+              val rr = real radius
+              val twoPi = 2.0 * Math.pi
+              fun wedge (startA, sweep, color, im) =
+                let
+                  val segs = Int.max (2, iround (sweep / twoPi * 64.0))
+                  fun pt k =
+                    let val a = startA + sweep * real k / real segs
+                    in (cx + iround (rr * Math.cos a), cy + iround (rr * Math.sin a)) end
+                  val arcPts = List.tabulate (segs + 1, pt)
+                in R.fillPolygon im ((cx, cy) :: arcPts) color end
+              fun loop (_, [], _, im) = im
+                | loop (j, (_, v) :: rest, startA, im) =
+                    let
+                      val sweep = Real.abs v / total * twoPi
+                      val im = wedge (startA, sweep, seriesColor j, im)
+                    in loop (j + 1, rest, startA + sweep, im) end
+            in loop (0, cells, 0.0, im) end
+        end
+
       fun drawSeries (i, s, im) =
         let val color = seriesColor i in
           case s of
@@ -427,6 +483,8 @@ struct
           | Scatter pts => drawScatter (pts, color, im)
           | Bar cells   => drawBars (cells, color, im)
           | Hist xs     => drawHist (xs, color, im)
+          | Area pts    => drawArea (pts, color, im)
+          | Pie cells   => drawPie (cells, im)
         end
 
       val img =

@@ -31,6 +31,8 @@ sig
     | Bar     of (string * real) list (* labelled bars from a zero baseline *)
     | Scatter of (real * real) list   (* discrete points (drawn as marks) *)
     | Hist    of real list            (* samples, auto-binned into buckets *)
+    | Area    of (real * real) list   (* line filled down to the zero baseline *)
+    | Pie     of (string * real) list (* labelled wedges, sized by |value| *)
 
   (* Axis decoration.  `xlabel`/`ylabel` are drawn beside their axes ("" hides
      them); `grid` toggles the light gridlines at each tick. *)
