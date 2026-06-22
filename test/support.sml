@@ -15,7 +15,9 @@ struct
     let val d = Real.abs (a - b)
     in d <= eps orelse d <= eps * Real.max (Real.abs a, Real.abs b) end
 
-  fun rstr x = Real.fmt (StringCvt.GEN (SOME 12)) x
+  fun rstr x =
+    let val s = Real.fmt (StringCvt.FIX (SOME 6)) x
+    in if String.isPrefix "~" s then "-" ^ String.extract (s, 1, NONE) else s end
 
   fun checkReal name (expected, actual) =
     H.check
